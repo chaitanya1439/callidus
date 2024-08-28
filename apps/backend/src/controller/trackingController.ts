@@ -55,12 +55,18 @@ export const getEstimatedETA = async (req: Request, res: Response): Promise<Resp
   try {
     const { pickupLat, pickupLong, dropoffLat, dropoffLong } = req.body;
 
+    // Retrieve the Google API key
+    const googleApiKey = process.env.GOOGLE_KEY;
+    if (!googleApiKey) {
+      return res.status(500).json({ message: 'Google API key not set' });
+    }
+
     // Call Google Distance Matrix API
     const response = await client.distancematrix({
       params: {
         origins: [{ lat: pickupLat, lng: pickupLong }],
         destinations: [{ lat: dropoffLat, lng: dropoffLong }],
-        key: process.env.GOOGLE_KEY!,
+        key: googleApiKey,
       },
     });
 

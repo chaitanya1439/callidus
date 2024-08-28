@@ -1,54 +1,73 @@
 import { Router } from 'express';
 import multer from 'multer';
 import passport from 'passport';
-import { uploadFile, downloadFile, deleteFile } from '../services/s3Service'; // Remove unused getSignedUrl import
-import { authMiddleware } from '../middleware/authenticate'; // Adjust the import path to be relative to the current file
-import { S3Client } from '@aws-sdk/client-s3'; // Import GetObjectCommand // Import getSignedUrl
+import { uploadFile, downloadFile, deleteFile } from '../services/s3Service';
+import { authMiddleware } from '../middleware/authenticate';
+import { S3Client } from '@aws-sdk/client-s3';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 
-
 const prisma = new PrismaClient();
 const router = Router();
 const upload = multer();
-const JWT_SECRET = process.env.JWT_SECRET!;
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Ensure JWT_SECRET is defined
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is not defined in the environment variables');
+}
+
 // Initialize S3 client
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
+const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME;
 
+if (!BUCKET_NAME) {
+  throw new Error('AWS_S3_BUCKET_NAME is not defined in the environment variables');
+}
+
+// Sign in and generate JWT
 router.post('/signin', async (req, res) => {
   const { email } = req.body;
-  const existinguser = await prisma.user.findFirst({
-    where: {
-      email,
+
+  try {
+    const existingUser = await prisma.user.findFirst({ where: { email } });
+
+    if (existingUser) {
+      const token = jwt.sign({ userId: existingUser.id }, JWT_SECRET, { expiresIn: '1h' });
+      res.json({ token });
+    } else {
+      res.status(401).json({ message: 'Invalid email' });
     }
-  })
-  if (existinguser) {
-    const token = jwt.sign({
-      userId: existinguser.id
-    }, JWT_SECRET)
-    res.json({ token })
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
-const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME!;
 
+// Generate a presigned URL for S3 file upload
 router.get('/presignedUrl', authMiddleware, async (req, res) => {
-  const userId = req.user; // Make sure to extract userId from the request
-  const { url, fields } = await createPresignedPost(s3Client, {
-    Bucket: BUCKET_NAME,
-    Key: `auth/${userId}/${Math.random()}/image.png`,
-    Conditions: [
-      ['content-length-range', 0, 5 * 1024 * 1024] // 5 MB max
-    ],
-    Fields: {
-      'Content-Type': 'image/png'
-    },
-    Expires: 3600
-  });
-  console.log(url,fields)
-  res.json({ presignedUrl:url});
+  const userId = req.user;
 
-})
+  if (!userId) {
+    return res.status(401).json({ message: 'User not authenticated' });
+  }
+
+  try {
+    const { url, fields } = await createPresignedPost(s3Client, {
+      Bucket: BUCKET_NAME,
+      Key: `auth/${userId}/${Math.random()}/image.png`,
+      Conditions: [['content-length-range', 0, 5 * 1024 * 1024]], // 5 MB max
+      Fields: {
+        'Content-Type': 'image/png',
+      },
+      Expires: 3600,
+    });
+
+    res.json({ presignedUrl: url, fields });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // Upload file to S3
 router.post('/upload', passport.authenticate('jwt', { session: false }), upload.single('file'), uploadFile);

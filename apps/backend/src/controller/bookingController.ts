@@ -4,10 +4,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Get available rooms
-export const getAvailableRooms = async ( req:Request,res: Response ): Promise<Response> => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  const room = req.room;
+export const getAvailableRooms = async (req: Request, res: Response): Promise<Response> => {
   try {
     const rooms = await prisma.room.findMany({ where: { availability: true } });
     return res.json(rooms);

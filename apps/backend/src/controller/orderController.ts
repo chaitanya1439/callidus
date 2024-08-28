@@ -3,9 +3,15 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Define a User type based on the structure of your user object
+interface User {
+  id: number;
+  email?: string;  // Add other fields as needed
+}
+
 export const createOrder = async (req: Request, res: Response) => {
   const { menuItemId } = req.body;
-  const userId = (req.user as any).id;
+  const userId = (req.user as User).id;
 
   try {
     // Retrieve menu item details to get the price

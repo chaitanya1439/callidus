@@ -4,13 +4,16 @@ import { z } from 'zod';
 const prisma = new PrismaClient();
 
 const bookingSchema = z.object({
-  userId: z.number(),  // Changed from string to number
-  roomId: z.number(),  // Added roomId field
-  startDate: z.date(), // Adjusted for Date type
-  endDate: z.date(),   // Adjusted for Date type
+  userId: z.number(),
+  roomId: z.number(),
+  startDate: z.date(),
+  endDate: z.date(),
 });
 
-export const createBooking = async (data: any) => {
+// Infer the type from the Zod schema
+type BookingData = z.infer<typeof bookingSchema>;
+
+export const createBooking = async (data: BookingData) => {
   const parsedData = bookingSchema.safeParse(data);
   if (!parsedData.success) {
     throw new Error('Validation failed: ' + parsedData.error.errors.map(e => e.message).join(', '));

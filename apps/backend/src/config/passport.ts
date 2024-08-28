@@ -2,17 +2,23 @@ import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth2';
 import bcrypt from 'bcrypt';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User as PrismaUser } from '@prisma/client';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import { User } from '../types/user'; // Import the extended User type
-
+import { User as ExtendedUser } from '../types/user'; // Import the extended User type
 
 dotenv.config();
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET!;
+
+const JWT_SECRET = process.env.JWT_SECRET || (() => { throw new Error("JWT_SECRET is not defined in environment variables"); })();
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || (() => { throw new Error("GOOGLE_CLIENT_ID is not defined in environment variables"); })();
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || (() => { throw new Error("GOOGLE_CLIENT_SECRET is not defined in environment variables"); })();
+
+interface JwtPayload {
+  id: number;
+}
 
 // Local Strategy for email and password authentication
 passport.use(
@@ -21,7 +27,7 @@ passport.use(
       usernameField: 'email',
       passwordField: 'password',
     },
-    async (email: string, password: string, done: (err: any, user?: any, info?: any) => void) => {
+    async (email: string, password: string, done: (err: Error | null, user?: ExtendedUser | false, info?: { message: string }) => void) => {
       try {
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
@@ -34,7 +40,7 @@ passport.use(
         }
 
         const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '1h' });
-        const userWithToken: User = { ...user, token };
+        const userWithToken: ExtendedUser = { ...user, token };
         return done(null, userWithToken);
       } catch (err) {
         console.error('Error in LocalStrategy:', err);
@@ -47,24 +53,18 @@ passport.use(
 passport.use(
   new GoogleStrategy(
     {
-      clientID: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientID: GOOGLE_CLIENT_ID,
+      clientSecret: GOOGLE_CLIENT_SECRET,
       callbackURL: "http://localhost:3000/home",
       scope: ['profile', 'email'],
     },
-    async (
-      _accessToken: string,
-      _refreshToken: string,
-      profile: any, // Adjust this type if you have a specific interface
-      done: (err: any, user?: any, info?: any) => void
-    ) => {
+    async (_accessToken: string, _refreshToken: string, profile: passport.Profile, done: (err: Error | null, user?: PrismaUser | false, info?: { message: string }) => void) => {
       try {
-        console.log(profile);
-        const result = await prisma.user.findUnique({ where: { email: profile.email } });
+        const result = await prisma.user.findUnique({ where: { email: profile.emails?.[0].value } });
         if (!result) {
           const newUser = await prisma.user.create({
             data: {
-              email: profile.email,
+              email: profile.emails?.[0].value || '', // Use the email provided by Google
               password: 'google', // Password should be handled properly in production
             },
           });
@@ -80,15 +80,13 @@ passport.use(
   )
 );
 
-
-
 // Serialize user for session
-passport.serializeUser((user: any, done) => {
+passport.serializeUser((user: ExtendedUser, done: (err: Error | null, id?: number) => void) => {
   done(null, user.id);
 });
 
 // Deserialize user from session
-passport.deserializeUser(async (id: number, done) => {
+passport.deserializeUser(async (id: number, done: (err: Error | null, user?: PrismaUser | false) => void) => {
   try {
     const user = await prisma.user.findUnique({ where: { id } });
     if (user) {
@@ -109,7 +107,7 @@ passport.use(
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: JWT_SECRET,
     },
-    async (jwtPayload: any, done: (err: any, user?: any, info?: any) => void) => {
+    async (jwtPayload: JwtPayload, done: (err: Error | null, user?: PrismaUser | false, info?: { message: string }) => void) => {
       try {
         const user = await prisma.user.findUnique({ where: { id: jwtPayload.id } });
         if (user) {

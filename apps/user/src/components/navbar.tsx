@@ -5,18 +5,24 @@ import { MdShoppingCart, MdPerson, MdLocationOn, MdSearch, MdClose, MdNotificati
 import axios from 'axios';
 import { useRouter } from 'next/router';
 
+interface User {
+    id: string;
+    name: string;
+    email?: string;
+    // Add other user fields as necessary
+}
+
 const Navbar: React.FC = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [user, setUser] = useState<any>(null); // Replace `any` with a proper user type/interface
+    const [user, setUser] = useState<User | null>(null);
     const router = useRouter();
 
     const BACKEND_URL = "http://localhost:3001"; 
 
     useEffect(() => {
-        // Fetch user profile on component mount
         const fetchUserProfile = async () => {
             try {
-                const response = await axios.get(`${BACKEND_URL}/v1/user/profile`); // Adjust the API endpoint as needed
+                const response = await axios.get(`${BACKEND_URL}/v1/user/profile`);
                 setUser(response.data);
             } catch (error) {
                 console.error('Failed to fetch user profile:', error);
@@ -32,7 +38,7 @@ const Navbar: React.FC = () => {
 
     const handleLogout = async () => {
         try {
-            await axios.post(`${BACKEND_URL}/v1/user/logout`); // Adjust the API endpoint as needed
+            await axios.post(`${BACKEND_URL}/v1/user/logout`);
             setUser(null);
             router.push('/login');
         } catch (error) {
@@ -42,9 +48,7 @@ const Navbar: React.FC = () => {
 
     return (
         <div>
-            {/* Main Navbar */}
             <div className="bg-gray-100 flex items-center justify-between px-4 py-2 shadow-md">
-                {/* Slidebar and SHELTERIC text */}
                 <div className={`flex items-center ${isSearchOpen ? 'hidden' : 'flex'} md:flex`}>
                     <div className="hidden md:block">
                         <Slidebar />
@@ -54,29 +58,22 @@ const Navbar: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Search Bar and Icon Container */}
                 <div className="flex items-center flex-1 justify-center relative">
-                    {/* Search Bar */}
                     <input
                         type="text"
                         className={`w-full max-w-md px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-950 ${isSearchOpen ? 'block' : 'hidden md:block'}`}
                         placeholder="Search for products, brands, and more..."
                     />
-
-                    {/* Search Icon (only visible on mobile when search bar is hidden) */}
                     <MdSearch
                         className={`absolute top-2 right-3 h-6 w-6 text-gray-950 hover:text-blue-600 transition duration-200 ease-in-out cursor-pointer ${isSearchOpen ? 'hidden' : 'block md:hidden'}`}
                         onClick={toggleSearch}
                     />
-
-                    {/* Close Icon (only visible on mobile when search bar is open) */}
                     <MdClose
                         className={`absolute top-2 right-3 h-6 w-6 text-gray-950 hover:text-blue-600 transition duration-200 ease-in-out cursor-pointer ${isSearchOpen ? 'block' : 'hidden md:hidden'}`}
                         onClick={toggleSearch}
                     />
                 </div>
 
-                {/* Navigation Buttons */}
                 <nav className={`flex items-center space-x-8 ${isSearchOpen ? 'hidden' : 'hidden md:flex'}`}>
                     <button
                         aria-label="Location"
@@ -84,22 +81,18 @@ const Navbar: React.FC = () => {
                     >
                         <MdLocationOn className="h-6 w-6 text-gray-950" />
                     </button>
-
                     <button
                         aria-label="Shopping Cart"
                         className="text-gray-600 hover:text-blue-600 transition duration-200 ease-in-out relative"
                     >
                         <MdShoppingCart className="h-6 w-6 text-gray-950" />
                     </button>
-
                     <button
                         aria-label="Notifications"
                         className="text-gray-600 hover:text-blue-600 transition duration-200 ease-in-out relative"
                     >
                         <MdNotifications className="h-6 w-6 text-gray-950" />
                     </button>
-
-                    {/* User Profile Dropdown */}
                     <div className="relative">
                         <button
                             aria-label="User Profile"
@@ -126,7 +119,6 @@ const Navbar: React.FC = () => {
                 </nav>
             </div>
 
-            {/* Secondary Navbar */}
             <div className="bg-base-300 px-4 py-2 shadow-sm">
                 <ul className="flex space-x-8 text-lg text-black">
                     <li>

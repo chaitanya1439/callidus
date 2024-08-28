@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { MdHome, MdSearch, MdShoppingCart, MdPerson, MdFavorite, MdLogout } from 'react-icons/md';
+import { MdHome, MdShoppingCart, MdPerson, MdFavorite, MdLogout } from 'react-icons/md';
 import Slidebar from './slidebar';
 
 const BottomNavbar: React.FC = () => {

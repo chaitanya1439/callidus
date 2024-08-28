@@ -1,17 +1,16 @@
+import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../types/authenticatedRequest';
 
-// Ensure JWT_SECRET is defined
-const JWT_SECRET = process.env.JWT_SECRET!;
+const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET is not defined in the environment variables');
 }
 
 // Middleware for JWT authentication using Passport
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
-  passport.authenticate('jwt', { session: false }, (err: any, user: any) => {
+  passport.authenticate('jwt', { session: false }, (err: Error | null, user: { id: number } | false) => {
     if (err) {
       console.error('Authentication error:', err);
       return next(err);

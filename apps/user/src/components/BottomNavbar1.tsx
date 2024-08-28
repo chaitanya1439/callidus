@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
-import { MdHome, MdSearch, MdShoppingCart, MdPerson, MdFavorite } from 'react-icons/md';
+import { MdHome, MdShoppingCart, MdPerson, MdFavorite } from 'react-icons/md';
+
 import Slidebar from './slidebar1';
 
 

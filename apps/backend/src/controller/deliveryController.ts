@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
+
 export const assignDelivery = async (req: Request, res: Response) => {
   const { orderId, deliveryPersonnelId } = req.body;
 
@@ -36,9 +37,6 @@ export const updateDeliveryStatus = async (req: Request, res: Response) => {
 };
 
 export const getDeliveries = async (req: Request, res: Response) => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    const getDeliveries = req.deliveries;
   try {
     const deliveries = await prisma.delivery.findMany({
       include: {

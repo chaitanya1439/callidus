@@ -4,9 +4,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Get all events
-export const getEvents = async (req:Request,res: Response): Promise<Response> => {
-  // @ts-ignore
-  const event = req.event;
+export const getEvents = async (req: Request, res: Response): Promise<Response> => {
   try {
     const events = await prisma.event.findMany();
     return res.json(events);

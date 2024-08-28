@@ -3,9 +3,31 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const submitRating = async (req: Request, res: Response): Promise<void> => {
-  const { rateeId, rating, comment } = req.body;
-  const raterId = (req.user as any).id; // Assuming you have user authentication
+// Define the expected shape of the request body for submitting a rating
+interface SubmitRatingRequestBody {
+  rateeId: string;
+  rating: number;
+  comment?: string; // Optional comment
+}
+
+// Define the expected shape of the request params for getting ratings
+interface GetRatingsRequestParams {
+  userId: string; // Assuming userId is a string, adjust if it's a number
+}
+
+// Update `req.user` typing with a proper user type
+interface AuthenticatedRequest extends Request {
+  user?: { id: number }; // Adjust based on your actual user type
+}
+
+export const submitRating = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { rateeId, rating, comment }: SubmitRatingRequestBody = req.body;
+  const raterId = req.user?.id; // Ensure user is defined
+
+  if (!raterId) {
+    res.status(401).json({ error: 'User not authenticated' });
+    return;
+  }
 
   try {
     // Ensure rating is between 1 and 5
@@ -29,12 +51,12 @@ export const submitRating = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-export const getRatings = async (req: Request, res: Response): Promise<void> => {
+export const getRatings = async (req: Request<GetRatingsRequestParams>, res: Response): Promise<void> => {
   const { userId } = req.params;
 
   try {
     const ratings = await prisma.rating.findMany({
-      where: { rateeId: (userId) },
+      where: { rateeId: (userId) }, // Convert userId to number if necessary
       include: {
         rater: true, // Include rater details if needed
       },
