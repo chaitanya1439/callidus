@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 permissions:
   actions: read
@@ -14,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -30,17 +27,4 @@ jobs:
       - name: Install Dependencies
         run: npm ci --legacy-peer-deps  # Use npm ci for a clean install
 
-      - name: Start Nx Cloud CI Run
-        run: |
-          npx nx-cloud start-ci-run \
-            --distribute-on="3 linux-medium-js" \
-            --stop-agents-after="build" || exit 0
-        # Ensure the command exits gracefully even if it fails
-
-      - name: Set Nx SHAs
-        uses: nrwl/nx-set-shas@v4
-        # Ensure Nx SHA references are up-to-date
-
-      - name: Run Nx Affected
-        run: npx nx affected -t lint test build
-        # Runs lint, test, and build only for affected projects
+      
